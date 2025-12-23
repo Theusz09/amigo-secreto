@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Amigo Secreto Online</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        .animate-bounce { animation: bounce 1s infinite; }
+    </style>
+</head>
+<body>
+    <div id="app"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+
+    <script type="text/babel">
+        const { useState } = React;
+
+        function GiftIcon({ className }) {
+            return (
+                <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
+                </svg>
+            );
+        }
+
+        function UsersIcon({ className }) {
+            return (
+                <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+            );
+        }
+
+        function ShuffleIcon({ className }) {
+            return (
+                <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                </svg>
+            );
+        }
+
+        function LockIcon({ className }) {
+            return (
+                <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+            );
+        }
+
+        function AmigoSecreto() {
+            const [stage, setStage] = useState('setup');
+            const [participants, setParticipants] = useState(['']);
+            const [shuffledPairs, setShuffledPairs] = useState([]);
+            const [selectedName, setSelectedName] = useState('');
+            const [revealed, setRevealed] = useState(false);
+
+            const addParticipant = () => {
+                setParticipants([...participants, '']);
+            };
+
+            const removeParticipant = (index) => {
+                const newParticipants = participants.filter((_, i) => i !== index);
+                setParticipants(newParticipants);
+            };
+
+            const updateParticipant = (index, value) => {
+                const newParticipants = [...participants];
+                newParticipants[index] = value;
+                setParticipants(newParticipants);
+            };
+
+            const shuffleArray = (array) => {
+                const shuffled = [...array];
+                for (let i = shuffled.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+                }
+                return shuffled;
+            };
+
+            const createValidShuffle = (names) => {
+                let attempts = 0;
+                const maxAttempts = 100;
+
+                while (attempts < maxAttempts) {
+                    const shuffled = shuffleArray(names);
+                    let valid = true;
+
+                    for (let i = 0; i < names.length; i++) {
+                        if (names[i] === shuffled[i]) {
+                            valid = false;
+                            break;
+                        }
+                    }
+
+                    if (valid) {
+                        return names.map((giver, index) => ({
+                            giver,
+                            receiver: shuffled[index]
+                        }));
+                    }
+
+                    attempts++;
+                }
+
+                return null;
+            };
+
+            const handleShuffle = () => {
+                const validNames = participants.filter(p => p.trim() !== '');
+                
+                if (validNames.length < 3) {
+                    alert('Adicione pelo menos 3 participantes!');
+                    return;
+                }
+
+                const pairs = createValidShuffle(validNames);
+                
+                if (!pairs) {
+                    alert('Erro ao sortear. Tente novamente!');
+                    return;
+                }
+
+                setShuffledPairs(pairs);
+                setStage('shuffled');
+            };
+
+            const handleReveal = () => {
+                if (!selectedName) {
+                    alert('Digite seu nome!');
+                    return;
+                }
+
+                const pair = shuffledPairs.find(p => 
+                    p.giver.toLowerCase().trim() === selectedName.toLowerCase().trim()
+                );
+
+                if (!pair) {
+                    alert('Nome não encontrado! Verifique se digitou corretamente.');
+                    return;
+                }
+
+                setRevealed(pair.receiver);
+            };
+
+            const handleReset = () => {
+                setStage('setup');
+                setParticipants(['']);
+                setShuffledPairs([]);
+                setSelectedName('');
+                setRevealed(false);
+            };
+
+            if (stage === 'setup') {
+                return (
+                    <div className="min-h-screen bg-gradient-to-br from-red-500 via-red-600 to-pink-600 p-6">
+                        <div className="max-w-2xl mx-auto">
+                            <div className="bg-white rounded-2xl shadow-2xl p-8">
+                                <div className="flex items-center justify-center mb-6">
+                                    <GiftIcon className="w-12 h-12 text-red-500 mr-3" />
+                                    <h1 className="text-4xl font-bold text-gray-800">Amigo Secreto</h1>
+                                </div>
+
+                                <div className="mb-6">
+                                    <div className="flex items-center mb-4">
+                                        <UsersIcon className="w-5 h-5 text-gray-600 mr-2" />
+                                        <h2 className="text-xl font-semibold text-gray-700">Participantes</h2>
+                                    </div>
+
+                                    <div className="space-y-3">
+                                        {participants.map((participant, index) => (
+                                            <div key={index} className="flex gap-2">
+                                                <input
+                                                    type="text"
+                                                    value={participant}
+                                                    onChange={(e) => updateParticipant(index, e.target.value)}
+                                                    placeholder={`Participante ${index + 1}`}
+                                                    className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-red-500 focus:outline-none"
+                                                />
+                                                {participants.length > 1 && (
+                                                    <button
+                                                        onClick={() => removeParticipant(index)}
+                                                        className="px-4 py-3 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition"
+                                                    >
+                                                        Remover
+                                                    </button>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    <button
+                                        onClick={addParticipant}
+                                        className="mt-4 w-full py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition font-semibold"
+                                    >
+                                        + Adicionar Participante
+                                    </button>
+                                </div>
+
+                                <button
+                                    onClick={handleShuffle}
+                                    className="w-full py-4 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-xl hover:from-red-600 hover:to-pink-600 transition font-bold text-lg flex items-center justify-center gap-2 shadow-lg"
+                                >
+                                    <ShuffleIcon className="w-6 h-6" />
+                                    Sortear Amigo Secreto
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            if (stage === 'shuffled' && !revealed) {
+                return (
+                    <div className="min-h-screen bg-gradient-to-br from-green-500 via-green-600 to-teal-600 p-6 flex items-center justify-center">
+                        <div className="max-w-md w-full">
+                            <div className="bg-white rounded-2xl shadow-2xl p-8">
+                                <div className="flex items-center justify-center mb-6">
+                                    <LockIcon className="w-12 h-12 text-green-500 mr-3" />
+                                    <h1 className="text-3xl font-bold text-gray-800">Sorteio Realizado!</h1>
+                                </div>
+
+                                <div className="mb-6 p-4 bg-green-50 rounded-lg border-2 border-green-200">
+                                    <p className="text-center text-gray-700 font-medium">
+                                        ✅ O sorteio foi concluído com sucesso!
+                                    </p>
+                                    <p className="text-center text-sm text-gray-600 mt-2">
+                                        Cada participante deve acessar individualmente para descobrir quem tirou.
+                                    </p>
+                                </div>
+
+                                <div className="mb-6">
+                                    <label className="block text-gray-700 font-semibold mb-2">
+                                        Digite seu nome:
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={selectedName}
+                                        onChange={(e) => setSelectedName(e.target.value)}
+                                        placeholder="Seu nome"
+                                        className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-green-500 focus:outline-none"
+                                        onKeyPress={(e) => e.key === 'Enter' && handleReveal()}
+                                    />
+                                </div>
+
+                                <button
+                                    onClick={handleReveal}
+                                    className="w-full py-4 bg-gradient-to-r from-green-500 to-teal-500 text-white rounded-xl hover:from-green-600 hover:to-teal-600 transition font-bold text-lg shadow-lg"
+                                >
+                                    Revelar Meu Amigo Secreto
+                                </button>
+
+                                <button
+                                    onClick={handleReset}
+                                    className="w-full mt-3 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition"
+                                >
+                                    Novo Sorteio
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            if (revealed) {
+                return (
+                    <div className="min-h-screen bg-gradient-to-br from-purple-500 via-purple-600 to-indigo-600 p-6 flex items-center justify-center">
+                        <div className="max-w-md w-full">
+                            <div className="bg-white rounded-2xl shadow-2xl p-8 text-center">
+                                <GiftIcon className="w-20 h-20 text-purple-500 mx-auto mb-6 animate-bounce" />
+                                
+                                <h1 className="text-2xl font-bold text-gray-800 mb-4">
+                                    Seu amigo secreto é:
+                                </h1>
+
+                                <div className="bg-gradient-to-r from-purple-500 to-indigo-500 text-white py-6 px-8 rounded-xl mb-6 shadow-lg">
+                                    <p className="text-3xl font-bold">{revealed}</p>
+                                </div>
+
+                                <div className="bg-yellow-50 border-2 border-yellow-300 rounded-lg p-4 mb-6">
+                                    <p className="text-sm text-yellow-800 font-medium">
+                                        🤫 Não conte para ninguém!
+                                    </p>
+                                </div>
+
+                                <button
+                                    onClick={() => {
+                                        setSelectedName('');
+                                        setRevealed(false);
+                                    }}
+                                    className="w-full py-3 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition font-semibold"
+                                >
+                                    Voltar
+                                </button>
+
+                                <button
+                                    onClick={handleReset}
+                                    className="w-full mt-3 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition"
+                                >
+                                    Novo Sorteio
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+        }
+
+        ReactDOM.render(<AmigoSecreto />, document.getElementById('app'));
+    </script>
+</body>
+</html>
